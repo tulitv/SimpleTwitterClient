@@ -1,0 +1,24 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.codepath.apps.simpletwitterclient.ReplyDialogFragment"
+    android:layout_gravity="center" android:orientation="vertical"
+    android:weightSum="1">
+
+
+    <EditText
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/etReplyMessage"
+        android:layout_gravity="center_horizontal"
+        android:layout_weight="0.21"
+        android:lines="3"
+        android:gravity="top|left"/>
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/label_submit_reply"
+        android:id="@+id/btnSubmitReply"
+        android:layout_gravity="center_horizontal"/>
+</LinearLayout>
