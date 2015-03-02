@@ -1,9 +1,9 @@
 package com.codepath.apps.simpletwitterclient;
 
+import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentActivity;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.text.Spannable;
@@ -16,21 +16,16 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
-import com.codepath.apps.simpletwitterclient.R;
+import com.codepath.apps.simpletwitterclient.fragments.ReplyDialogFragment;
 import com.codepath.apps.simpletwitterclient.models.Tweet;
-import com.loopj.android.http.AsyncHttpClient;
-import com.loopj.android.http.AsyncHttpResponseHandler;
 import com.loopj.android.http.JsonHttpResponseHandler;
 import com.makeramen.RoundedTransformationBuilder;
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Transformation;
 
 import org.apache.http.Header;
-import org.json.JSONException;
 import org.json.JSONObject;
-import org.w3c.dom.Text;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -38,6 +33,9 @@ import java.util.regex.Pattern;
 public class DetailedViewActivity extends ActionBarActivity {
 
     long uid;
+
+    // Need to access user profiles
+    String screen_name;
 
     ImageView ivProfileImage;
     TextView tvUser;
@@ -64,68 +62,78 @@ public class DetailedViewActivity extends ActionBarActivity {
 
         client = TwitterApplication.getRestClient();
         populateDetailedView();
-
-        Tweet.max_id = 0;
-
     }
 
     public void populateDetailedView() {
-        client.showTweet(new JsonHttpResponseHandler() {
-            @Override
-            public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
-                Tweet tweet = Tweet.fromJSON(response);
+        if (Utility.isNetworkAvailable(getBaseContext())) {
+            client.showTweet(uid, new JsonHttpResponseHandler() {
+                @Override
+                public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
+                    Tweet tweet = Tweet.fromJSON(response);
 
-                // Top TextView - User Name and Screen Name
-                Spannable strName = new SpannableString(tweet.getUser().getName() + "\n@" + tweet.getUser().getScreenName());
-                strName.setSpan(new StyleSpan(Typeface.BOLD), 0, tweet.getUser().getName().length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                tvUser.setText(strName, TextView.BufferType.SPANNABLE);
+                    screen_name = tweet.getUser().getScreenName();
 
-                // Bottom TextView - Re-tweets and Favourites
-                String strRetweetCount = String.valueOf(tweet.getRetweetCount());
-                String strFavouritesCount = String.valueOf(tweet.getFavouritesCount());
-                Spannable strRetweetAndFavourites =  new SpannableString(
-                       strRetweetCount + " RETWEETS    " +
-                       strFavouritesCount + " FAVOURITES");
-                strRetweetAndFavourites.setSpan(new StyleSpan(Typeface.BOLD), 0, strRetweetCount.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                strRetweetAndFavourites.setSpan(new StyleSpan(Typeface.BOLD),
-                        (strRetweetCount + " RETWEETS    ").length(),
-                        (strRetweetCount + " RETWEETS    " + strFavouritesCount).length(),
-                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                tvFollowersAndFavourites.setText(strRetweetAndFavourites, TextView.BufferType.SPANNABLE);
+                    // Top TextView - User Name and Screen Name
+                    Spannable strName = new SpannableString(
+                            tweet.getUser().getName() +
+                                    "\n@" +
+                                    tweet.getUser().getScreenName());
 
-                Spannable strBody = new SpannableString(tweet.getBody());
-                Matcher matcherP = Pattern.compile("#([A-Za-z0-9_-]+)").matcher(strBody);
-                while(matcherP.find()) strBody.setSpan(new ForegroundColorSpan(Color.rgb(0x5E, 0xB0, 0xED)),matcherP.start(), matcherP.end(), 0);
-                Matcher matcherA = Pattern.compile("@([A-Za-z0-9_-]+)").matcher(strBody);
-                while(matcherA.find()) strBody.setSpan(new ForegroundColorSpan(Color.rgb(0x5E, 0xB0, 0xED)),matcherA.start(), matcherA.end(), 0);
-                tvBody.setText(strBody);
+                    strName.setSpan(new StyleSpan(Typeface.BOLD), 0, tweet.getUser().getName().length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    tvUser.setText(strName, TextView.BufferType.SPANNABLE);
 
-                tvDateTime.setText(tweet.getCreatedAt());
+                    // Bottom TextView - Re-tweets and Favourites
+                    String strRetweetCount = String.valueOf(tweet.getRetweetCount());
+                    String strFavouritesCount = String.valueOf(tweet.getFavouritesCount());
+                    Spannable strRetweetAndFavourites = new SpannableString(
+                            strRetweetCount + " RETWEETS    " +
+                                    strFavouritesCount + " FAVOURITES");
+                    strRetweetAndFavourites.setSpan(new StyleSpan(Typeface.BOLD), 0, strRetweetCount.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    strRetweetAndFavourites.setSpan(new StyleSpan(Typeface.BOLD),
+                            (strRetweetCount + " RETWEETS    ").length(),
+                            (strRetweetCount + " RETWEETS    " + strFavouritesCount).length(),
+                            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    tvFollowersAndFavourites.setText(strRetweetAndFavourites, TextView.BufferType.SPANNABLE);
 
-                ivProfileImage.setImageResource(android.R.color.transparent);
-                Transformation transformation = new RoundedTransformationBuilder()
-                        .borderColor(Color.rgb(0xDC, 0xDC, 0xDC))
-                        .borderWidthDp(3)
-                        .cornerRadiusDp(5)
-                        .oval(false)
-                        .build();
-                Picasso.with(getBaseContext()).load(tweet.getUser().getProfileImageUrl()).
-                        fit().transform(transformation).into(ivProfileImage);
+                    Spannable strBody = new SpannableString(tweet.getBody());
+                    Matcher matcherP = Pattern.compile("#([A-Za-z0-9_-]+)").matcher(strBody);
+                    while (matcherP.find())
+                        strBody.setSpan(new ForegroundColorSpan(Color.rgb(0x5E, 0xB0, 0xED)), matcherP.start(), matcherP.end(), 0);
+                    Matcher matcherA = Pattern.compile("@([A-Za-z0-9_-]+)").matcher(strBody);
+                    while (matcherA.find())
+                        strBody.setSpan(new ForegroundColorSpan(Color.rgb(0x5E, 0xB0, 0xED)), matcherA.start(), matcherA.end(), 0);
+                    tvBody.setText(strBody);
 
-                if (tweet.getImage()!=null) {
-                    ivDisplayImage.setMinimumHeight(tweet.getImage().get(0).getHeight());
-                    ivDisplayImage.setMinimumWidth(tweet.getImage().get(0).getWidth());
-                    //Toast.makeText(getBaseContext(), tweet.getImage().get(0).getUrl(), Toast.LENGTH_SHORT);
-                    Picasso.with(getBaseContext()).load(tweet.getImage().get(0).getUrl()).into(ivDisplayImage);
+                    tvDateTime.setText(Utility.getRelativeTimeAgo(tweet.getCreatedAt()));
+
+                    ivProfileImage.setImageResource(android.R.color.transparent);
+                    Transformation transformation = new RoundedTransformationBuilder()
+                            .borderColor(Color.rgb(0xDC, 0xDC, 0xDC))
+                            .borderWidthDp(3)
+                            .cornerRadiusDp(5)
+                            .oval(false)
+                            .build();
+                    Picasso.with(getBaseContext()).load(tweet.getUser().getProfileImageUrl()).
+                            fit().transform(transformation).into(ivProfileImage);
+
+                    if (tweet.getImage() != null) {
+                        ivDisplayImage.setMinimumHeight(tweet.getImage().get(0).getHeight());
+                        ivDisplayImage.setMinimumWidth(tweet.getImage().get(0).getWidth());
+                        //Toast.makeText(getBaseContext(), tweet.getImage().get(0).getUrl(), Toast.LENGTH_SHORT);
+                        Picasso.with(getBaseContext()).load(tweet.getImage().get(0).getUrl()).into(ivDisplayImage);
+                    }
+
                 }
 
-            }
+                @Override
+                public void onFailure(int statusCode, Header[] headers, String responseString, Throwable throwable) {
 
-            @Override
-            public void onFailure(int statusCode, Header[] headers, String responseString, Throwable throwable) {
-
-            }
-        }, uid);
+                }
+            });
+        } else {
+            // Show NO INTERNET message
+            Utility.showNoInternet(this);
+        }
     }
 
     @Override
@@ -153,7 +161,20 @@ public class DetailedViewActivity extends ActionBarActivity {
 
     public void showReplyDialog() {
         FragmentManager fm = getSupportFragmentManager();
-        ReplyDialogFragment replyDialog = ReplyDialogFragment.newInstance("Send Reply", uid);
+        ReplyDialogFragment replyDialog = ReplyDialogFragment.newInstance("Send Reply", uid, screen_name);
         replyDialog.show(fm, "fragment_reply_dialog");
+    }
+
+    // Start Profile Activity when clicked on the profile image
+    public void onProfileImageClick(View view) {
+        if (Utility.isNetworkAvailable(this)) {
+            Intent i = new Intent(this, ProfileActivity.class);
+            i.putExtra("screen_name", screen_name);
+            startActivity(i);
+        }
+        else {
+            // Show NO INTERNET message
+            Utility.showNoInternet(this);
+        }
     }
 }

@@ -17,5 +17,6 @@
     <string name="label_no_internet">NO INTERNET CONNECTION</string>
     <string name="label_message">Your Message Here:</string>
     <string name="action_reply">Reply</string>
+    <string name="title_activity_profile">Profile</string>
 
 </resources>

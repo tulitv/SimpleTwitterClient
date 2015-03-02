@@ -72,7 +72,7 @@ public class TweetsArrayAdapter  extends ArrayAdapter<Tweet> {
         Matcher matcherA = Pattern.compile("@([A-Za-z0-9_-]+)").matcher(strBody);
         while(matcherA.find()) strBody.setSpan(new ForegroundColorSpan(Color.rgb(0x5E, 0xB0, 0xED)),matcherA.start(), matcherA.end(), 0);
         viewHolder.tvBody.setText(strBody);
-        viewHolder.tvCreatedAt.setText(tweet.getCreatedAt());
+        viewHolder.tvCreatedAt.setText(Utility.getRelativeTimeAgo(tweet.getCreatedAt()));
         viewHolder.tvRetweets.setText(String.valueOf(tweet.getRetweetCount()));
         viewHolder.tvFavorites.setText(String.valueOf(tweet.getFavouritesCount()));
 

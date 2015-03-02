@@ -48,9 +48,6 @@ public class Tweet extends Model {
 
     private ArrayList<Image> image;
 
-    // No need to save this
-    public static long max_id = 0;
-
     // Deserialize the JSON
     // Tweet.fromJSON("{...}") => Tweet
     public static Tweet fromJSON(JSONObject jsonObject) {
@@ -59,17 +56,12 @@ public class Tweet extends Model {
         try {
             tweet.body = jsonObject.getString("text");
             tweet.uid = jsonObject.getLong("id");
-            tweet.createdAt = tweet.getRelativeTimeAgo(jsonObject.getString("created_at"));
+            tweet.createdAt = jsonObject.getString("created_at");
             tweet.user = User.fromJSON(jsonObject.getJSONObject("user"));
             tweet.retweetCount = jsonObject.getInt("retweet_count");
             tweet.favouritesCount = jsonObject.getInt("favorite_count");
-            JSONArray jsonMedia = jsonObject.getJSONObject("entities").getJSONArray("media");
-            if (jsonMedia!=null) {
-                tweet.image = Image.fromJSONArray(jsonMedia);
-            }
-            long id = jsonObject.getLong("id");
-            if ((id < max_id) || (max_id == 0)) {
-                max_id = id;
+            if (hasJSONObject(jsonObject, "media")) {
+                tweet.image = Image.fromJSONArray(jsonObject.getJSONObject("entities").getJSONArray("media"));
             }
 
         } catch (JSONException e) {
@@ -81,8 +73,9 @@ public class Tweet extends Model {
     }
 
     // Tweet.fromJSONArray([{...},{...},...]) => List<Tweets>
-    public static ArrayList<Tweet> fromJSONArray(JSONArray jsonArray) {
+    public static ArrayList<Tweet> fromJSONArray(JSONArray jsonArray, boolean saveToDB) {
         ArrayList<Tweet> tweets = new ArrayList<>();
+
         // Interate the json array and create tweets
         for (int i = 0; i < jsonArray.length(); i++)
             try {
@@ -90,9 +83,12 @@ public class Tweet extends Model {
                 Tweet tweet = Tweet.fromJSON(tweetJson);
                 if (tweet != null) {
                     tweets.add(tweet);
-                    // Add to db when it is added to the ArrayList
-                    tweet.getUser().save();
-                    tweet.save();
+
+                    // Add to db when it is added to ONLY to the HomeTimeline ArrayList
+                    if (saveToDB) {
+                        tweet.getUser().save();
+                        tweet.save();
+                    }
                 }
             } catch (JSONException e) {
                 e.printStackTrace();
@@ -103,6 +99,8 @@ public class Tweet extends Model {
 
     }
 
+
+    // Getters
     public String getBody() {
         return body;
     }
@@ -125,34 +123,15 @@ public class Tweet extends Model {
 
     public ArrayList<Image> getImage() { return image; }
 
-    // getRelativeTimeAgo("Mon Apr 01 21:16:23 +0000 2014");
-    public String getRelativeTimeAgo(String rawJsonDate) {
-        String twitterFormat = "EEE MMM dd HH:mm:ss ZZZZZ yyyy";
-        SimpleDateFormat sf = new SimpleDateFormat(twitterFormat, Locale.ENGLISH);
-        sf.setLenient(true);
-
-        String relativeDate = "";
-        try {
-            long dateMillis = sf.parse(rawJsonDate).getTime();
-            relativeDate = DateUtils.getRelativeTimeSpanString(dateMillis,
-                    System.currentTimeMillis(), DateUtils.SECOND_IN_MILLIS).toString();
-        } catch (ParseException e) {
-            e.printStackTrace();
-        }
-
-        return relativeDate;
+    //Check if items exist in the json object
+    private static boolean hasJSONObject(JSONObject json, String item) {
+        return json.toString().contains(item);
     }
 
     public static ArrayList<Tweet> fromDB() {
 
         return (ArrayList) (new Select().from(Tweet.class).execute());
 
-    }
-
-    public static String fromDBTest() {
-        Tweet myTweet = new Select().from(Tweet.class).executeSingle();
-
-      return myTweet.getUser().getName() + " - " +myTweet.getBody();
     }
 
     public Tweet() {

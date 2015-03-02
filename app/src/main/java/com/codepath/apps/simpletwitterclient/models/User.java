@@ -24,6 +24,12 @@ public class User extends Model {
 
     @Column(name= "profileImageUrl")
     private String profileImageUrl;
+
+    private String tagLine;
+    private long tweetsCount;
+    private long followersCount;
+    private long followingCount;
+
     // Deserialize the user json =>user
     public static User fromJSON(JSONObject json) {
         User u = new User();
@@ -33,6 +39,14 @@ public class User extends Model {
             u.uid = json.getLong("id");
             u.screenName = json.getString("screen_name");
             u.profileImageUrl = json.getString("profile_image_url");
+
+            // User class being too generic, we want to make sure these items exist in json
+            // and if don't no exception is thrown but just not populated
+            u.tagLine = hasJSONObject(json, "description") ? json.getString("description") : "";
+            u.followersCount = hasJSONObject(json, "followers_count") ? json.getLong("followers_count") : 0;
+            u.followingCount = hasJSONObject(json, "friends_count") ? json.getLong("friends_count") : 0;
+            u.tweetsCount = hasJSONObject(json, "statuses_count") ? json.getLong("statuses_count") : 0;
+
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -40,6 +54,12 @@ public class User extends Model {
         return u;
     }
 
+    //Check if items exist in the json object
+    private static boolean hasJSONObject(JSONObject json, String item) {
+        return json.toString().contains(item);
+    }
+
+    // Getters
     public String getName() {
         return name;
     }
@@ -56,6 +76,15 @@ public class User extends Model {
         return profileImageUrl;
     }
 
+    public String getTagLine() { return tagLine; }
+
+    public long getTweetsCount() { return tweetsCount; }
+
+    public long getFollowersCount() { return followersCount; }
+
+    public long getFollowingCount() { return followingCount; }
+
+    // Default Constructor
     public User() {
         super();
     }

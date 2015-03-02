@@ -1,10 +1,12 @@
 package com.codepath.apps.simpletwitterclient;
 
+import android.content.Intent;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.WindowManager;
@@ -56,8 +58,6 @@ public class ComposeActivity extends ActionBarActivity {
     // Get the client
     client = TwitterApplication.getRestClient(); //singleton client
 
-    Tweet.max_id = 0;
-
     }
 
 
@@ -78,24 +78,27 @@ public class ComposeActivity extends ActionBarActivity {
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_tweet) {
 
-            // Post a tweet
-            client.postTweet(new JsonHttpResponseHandler() {
-                //SUCCESS
-                @Override
-                public void onSuccess(int statusCode, Header[] headers, JSONObject json) {
-                    // Tiny info, so we wait in this activity until we get response (good or bad)
-                    setResult(RESULT_OK, null);
-                    // Take back user to the timeline only if message could be submitted
-                    finish();
-                }
+            if (Utility.isNetworkAvailable(getBaseContext())) {
+                // Post a tweet
+                client.postTweet(etMessage.getText().toString(), 0, new JsonHttpResponseHandler() {
+                    //SUCCESS
+                    @Override
+                    public void onSuccess(int statusCode, Header[] headers, JSONObject json) {
+                        // Tiny info, so we wait in this activity until we get response (good or bad)
+                        setResult(RESULT_OK, null);
+                        // Take back user to the timeline only if message was submitted successfully
+                        finish();
+                    }
 
-                //FAILURE
-                @Override
-                public void onFailure(int statusCode, Header[] headers, String responseString, Throwable throwable) {
-                    //TODO: If message couldn't be submitted stay in this activity and notify user.
-                    //TODO: Why? because he/she might just forgot to turn on network.
-                }
-            }, etMessage.getText().toString(), 0);
+                    //FAILURE
+                    @Override
+                    public void onFailure(int statusCode, Header[] headers, String responseString, Throwable throwable) {
+                    }
+                });
+            } else {
+                // Show NO INTERNET message
+                Utility.showNoInternet(this);
+            }
 
 
             return true;

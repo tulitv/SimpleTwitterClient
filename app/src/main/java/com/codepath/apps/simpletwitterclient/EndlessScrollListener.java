@@ -7,13 +7,13 @@ public abstract class EndlessScrollListener implements AbsListView.OnScrollListe
     // before loading more.
     private int visibleThreshold = 5;
     // The current offset index of data you have loaded
-    private int currentPage = 0;
+    private long currentPage = 0;
     // The total number of items in the dataset after the last load
     private int previousTotalItemCount = 0;
     // True if we are still waiting for the last set of data to load.
     private boolean loading = true;
     // Sets the starting page index
-    private int startingPageIndex = 0;
+    private long startingPageIndex = 0;
 
     public EndlessScrollListener() {
     }
@@ -48,13 +48,13 @@ public abstract class EndlessScrollListener implements AbsListView.OnScrollListe
         // the visibleThreshold and need to reload more data.
         // If we do need to reload some more data, we execute onLoadMore to fetch the data.
         if (!loading && (totalItemCount-visibleItemCount)<=(firstVisibleItem+visibleThreshold)) {
-            onLoadMore(currentPage + 1, totalItemCount);
+            onLoadMore(totalItemCount);
             loading = true;
         }
     }
 
     // Defines the process for actually loading more data based on page
-    public abstract void onLoadMore(int page, int totalItemCount);
+    public abstract void onLoadMore(int totalItemCount);
 
     @Override
     public void onScrollStateChanged(AbsListView view, int scrollState) {
